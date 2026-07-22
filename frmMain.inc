@@ -266,9 +266,9 @@ end function
 '
 ' The cursor is saved and restored around the test.
 ' ========================================================================================
-sub SelfTest_Check( byval sName as string, byval ok as boolean, byval sDetail as string )
+sub SelfTest_Check( byval sName as string, byval bOK as boolean, byval sDetail as string )
     dim as string s
-    if ok then
+    if bOK then
         s = "PASS  "
     else
         s = "FAIL  "
