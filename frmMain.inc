@@ -1,5 +1,5 @@
 #include once "frmMain.bi"
-#include once "clsDoubleBuffer.bi"
+#include once "CBufferPaint.bi"
 
 ' ----------------------------------------------------------------------------------------
 ' Harness model: three panes laid out by the HOST, separated by two CSplitter instances.
@@ -96,7 +96,7 @@ end sub
 ' Paint one pane: filled box plus a label in its top-left corner.
 ' ========================================================================================
 sub frmMain_PaintPane( _
-            byref b       as clsDoubleBuffer, _
+            byref b       as CBufferPaint, _
             byval rcPane  as RECT, _
             byval sLabel  as string _
             )
@@ -122,7 +122,7 @@ end sub
 ' Process WM_PAINT message for window/dialog: frmMain
 ' ========================================================================================
 function frmMain_OnPaint( byval hwnd as HWND ) as LRESULT
-    dim as clsDoubleBuffer b
+    dim as CBufferPaint b
     dim pWindow as CWindow ptr = AfxCWindowPtr(hwnd)
     if pWindow = 0 then return 0
 
