@@ -42,7 +42,7 @@ The host keeps full control of its own layout.
 - Hover tracking uses `TrackMouseEvent` plus a 100 ms poll timer safety net
   (`WM_MOUSELEAVE` is not reliably delivered on fast exits). Hover is **pinned** for the
   duration of a drag, since the cursor legitimately roams outside the client under capture.
-- One `clsDoubleBuffer` per `WM_PAINT`; built-in flat paint, or a host paint callback that
+- One `CBufferPaint` per `WM_PAINT`; built-in flat paint, or a host paint callback that
   overrides rendering entirely. No host globals — colors are passed in.
 - **No keyboard support** by design. The host owns focus; nudging the splitter from a key
   is a `CSplitter_SetPos` call away.
