@@ -17,6 +17,14 @@ are ones you can set, and a paint callback replaces the built-in painter outrigh
 
 ---
 
+## What it looks like
+
+![The CSplitter demo](CSplitter.png)
+
+One vertical bar and one horizontal bar dividing three panes. The **bars are the thin lines**; the panes are the host's own windows. The control does not own, create or know about them — it moves itself and reports its new position, and the host resizes whatever sits either side.
+
+---
+
 ## Requirements
 
 **Files to copy into your project:**
