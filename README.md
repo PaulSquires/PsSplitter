@@ -1,4 +1,4 @@
-# CSplitter
+# PsSplitter
 
 An owner-drawn splitter bar for FreeBASIC Win32 applications: a draggable divider that sits
 between two panes, shows a resize cursor when the mouse is over it, and tells you where the
@@ -19,7 +19,7 @@ are ones you can set, and a paint callback replaces the built-in painter outrigh
 
 ## What it looks like
 
-![The CSplitter demo](CSplitter.png)
+![The PsSplitter demo](PsSplitter.png)
 
 One vertical bar and one horizontal bar dividing three panes. The **bars are the thin lines**; the panes are the host's own windows. The control does not own, create or know about them — it moves itself and reports its new position, and the host resizes whatever sits either side.
 
@@ -31,12 +31,12 @@ One vertical bar and one horizontal bar dividing three panes. The **bars are the
 
 | File | Purpose |
 |---|---|
-| `CSplitter.bi` | Declarations — types, callbacks, constants, function prototypes |
-| `CSplitter.inc` | Implementation |
-| `CBufferPaint.bi` | The flicker-free drawing surface the control paints through |
-| `CBufferPaint.inc` | Its implementation |
+| `PsSplitter.bi` | Declarations — types, callbacks, constants, function prototypes |
+| `PsSplitter.inc` | Implementation |
+| `PsBufferPaint.bi` | The flicker-free drawing surface the control paints through |
+| `PsBufferPaint.inc` | Its implementation |
 
-**AfxNova is required.** The control is built on `CWindow`, and `CBufferPaint` draws through
+**AfxNova is required.** The control is built on `CWindow`, and `PsBufferPaint` draws through
 `AfxNova\CGdiPlus.inc`. Sources include AfxNova relative to the workspace root
 (`#include once "AfxNova\CWindow.inc"`), so builds need the workspace root on the include
 path:
@@ -45,7 +45,7 @@ path:
 fbc64.exe -i "C:\dev" main.bas
 ```
 
-**Include order.** `CSplitter.inc` pulls in its own `.bi`, which pulls in `CBufferPaint.bi`.
+**Include order.** `PsSplitter.inc` pulls in its own `.bi`, which pulls in `PsBufferPaint.bi`.
 The two implementation files are included in this order, after the AfxNova headers:
 
 ```freebasic
@@ -56,8 +56,8 @@ The two implementation files are included in this order, after the AfxNova heade
 
 using AfxNova
 
-#include once "CBufferPaint.inc"
-#include once "CSplitter.inc"
+#include once "PsBufferPaint.inc"
+#include once "PsSplitter.inc"
 ```
 
 **GDI+ must be running before the first repaint and must outlive the last one.** The control
@@ -70,7 +70,7 @@ AfxGdipShutdown( gdipToken )
 ```
 
 `AfxGdipShutdown` must come after every window is destroyed, because each repaint builds and
-tears down a `CBufferPaint`.
+tears down a `PsBufferPaint`.
 
 **Never name an identifier `ok`.** GDI+ defines `Ok = 0` as a `Status` enum value in namespace
 `AfxNova`, and hosts customarily say `using AfxNova`. An existing variable, parameter or
@@ -93,16 +93,16 @@ dim shared as HWND hSplit
 dim shared as long gBarW          ' the bar's thickness, DPI-scaled once in the layout pass
 
 ' Create it. The control is created zero-sized and hidden.
-hSplit = CSplitter_Create( hWndParent, IDC_MYFORM_SPLITTER, CSPLITTER_VERTICAL )
+hSplit = PsSplitter_Create( hWndParent, IDC_MYFORM_SPLITTER, PSSPLITTER_VERTICAL )
 
 ' Colours for the built-in painter: idle, and hot/dragging.
-CSplitter_SetColors( hSplit, BGR(53,59,69), BGR(90,98,112) )
+PsSplitter_SetColors( hSplit, BGR(53,59,69), BGR(90,98,112) )
 
 ' Be told when the user drags it.
-CSplitter_SetPosChangedCallback( hSplit, @MySplit_PosChanged )
+PsSplitter_SetPosChangedCallback( hSplit, @MySplit_PosChanged )
 
 ' Initial position: the bar's x, in the parent's client coordinates. Silent.
-CSplitter_SetPos( hSplit, 240 )
+PsSplitter_SetPos( hSplit, 240 )
 ```
 
 Your layout pass owns the bar's size, its cross-axis geometry, and the limits:
@@ -117,13 +117,13 @@ sub MyForm_Layout( byval hwnd as HWND )
     dim as long minPaneW = pWindow->ScaleX( 80 )
 
     ' The control never derives its own limits -- push them in from here.
-    CSplitter_SetRange( hSplit, minPaneW, rc.right - minPaneW - gBarW )
+    PsSplitter_SetRange( hSplit, minPaneW, rc.right - minPaneW - gBarW )
 
     SetWindowPos( hSplit, 0, _
-        CSplitter_GetPos( hSplit ), rc.top, gBarW, rc.bottom - rc.top, _
+        PsSplitter_GetPos( hSplit ), rc.top, gBarW, rc.bottom - rc.top, _
         SWP_NOZORDER or SWP_SHOWWINDOW )
 
-    MyForm_LayoutPanes( CSplitter_GetPos( hSplit ) )
+    MyForm_LayoutPanes( PsSplitter_GetPos( hSplit ) )
 end sub
 ```
 
@@ -147,8 +147,8 @@ sub MySplit_PosChanged( byval hSplitter as HWND, byval newPos as integer, _
 
     ' BEGIN and END bracket the drag -- use them for work too expensive to do per pixel.
     select case nPhase
-        case CSPLITTER_PHASE_BEGIN : MyPanes_SuspendReflow()
-        case CSPLITTER_PHASE_END   : MyPanes_ResumeReflow() : gConfig.SplitPos = newPos
+        case PSSPLITTER_PHASE_BEGIN : MyPanes_SuspendReflow()
+        case PSSPLITTER_PHASE_END   : MyPanes_ResumeReflow() : gConfig.SplitPos = newPos
     end select
 end sub
 ```
@@ -165,8 +165,8 @@ This is the first thing to get right, because it is easy to get backwards:
 
 | Orientation | The bar is | It separates | It drags | Cursor | `nPos` is |
 |---|---|---|---|---|---|
-| `CSPLITTER_VERTICAL` | a vertical line | a **left** and a **right** pane | horizontally | `IDC_SIZEWE` | the bar's **x** |
-| `CSPLITTER_HORIZONTAL` | a horizontal line | a **top** and a **bottom** pane | vertically | `IDC_SIZENS` | the bar's **y** |
+| `PSSPLITTER_VERTICAL` | a vertical line | a **left** and a **right** pane | horizontally | `IDC_SIZEWE` | the bar's **x** |
+| `PSSPLITTER_HORIZONTAL` | a horizontal line | a **top** and a **bottom** pane | vertically | `IDC_SIZENS` | the bar's **y** |
 
 A vertical splitter does *not* split a window vertically into a top and a bottom — it *is* a
 vertical bar, and it splits left from right.
@@ -180,13 +180,13 @@ changed axis underneath a stale range is worse than a rebuild.
 Exactly one number, and it means exactly one thing:
 
 ```
-  CSPLITTER_VERTICAL     nPos = the x of the bar's LEFT edge, in parent client coords
-  CSPLITTER_HORIZONTAL   nPos = the y of the bar's TOP  edge, in parent client coords
+  PSSPLITTER_VERTICAL     nPos = the x of the bar's LEFT edge, in parent client coords
+  PSSPLITTER_HORIZONTAL   nPos = the y of the bar's TOP  edge, in parent client coords
 ```
 
 It is the *leading* edge, not the centre and not the trailing edge — so the right pane of a
 vertical split starts at `nPos + barWidth`, not at `nPos`. The parent whose client space this
-is, is the `hWndParent` you passed to `CSplitter_Create`; the control captures it once and
+is, is the `hWndParent` you passed to `PsSplitter_Create`; the control captures it once and
 never changes it. `nMin` and `nMax` live in the same space, and so does the `newPos` your
 callback receives.
 
@@ -204,14 +204,14 @@ through the single `SPL_PosChangedCallback`:
 
 | Phase | When | `newPos` | What a host typically does |
 |---|---|---|---|
-| `CSPLITTER_PHASE_BEGIN` | The user just grabbed the bar. Fired from the button-down, before the bar has moved at all. | The **current**, unchanged position | Start the gesture: hide anything expensive (scrollbars), suspend a reflow, snapshot state |
-| `CSPLITTER_PHASE_MOVE` | The position actually changed. Never fired when the clamped position works out the same as before. | The new position, already applied | Lay out the two panes. This is the per-pixel work, so keep it cheap |
-| `CSPLITTER_PHASE_END` | The drag ended: the button came up, or the capture was lost. | The final position | Commit: resume the reflow, persist the position to config |
+| `PSSPLITTER_PHASE_BEGIN` | The user just grabbed the bar. Fired from the button-down, before the bar has moved at all. | The **current**, unchanged position | Start the gesture: hide anything expensive (scrollbars), suspend a reflow, snapshot state |
+| `PSSPLITTER_PHASE_MOVE` | The position actually changed. Never fired when the clamped position works out the same as before. | The new position, already applied | Lay out the two panes. This is the per-pixel work, so keep it cheap |
+| `PSSPLITTER_PHASE_END` | The drag ended: the button came up, or the capture was lost. | The final position | Commit: resume the reflow, persist the position to config |
 
 `END` always arrives, including when another window steals the capture mid-drag — a stolen
 capture is treated as an implicit button-up, keeping the position the user dragged to, because
 every intermediate position has already been applied and there is nothing to undo. By the time
-`END` runs the state is consistent: `CSplitter_IsDragging` already returns FALSE.
+`END` runs the state is consistent: `PsSplitter_IsDragging` already returns FALSE.
 
 **By the time any of the three fires, the control has already moved itself.** Do not move the
 bar from inside the callback; lay out the panes and stop. Re-placing the bar from your own
@@ -229,11 +229,11 @@ layout pass is harmless — it is a no-op — but it is not something the callba
 
 The control never derives the range from the parent's client rect. It cannot: it has no idea
 what else lives in that space — a toolbar, another splitter, a scrollbar parked between the
-pane and the bar. Recompute the limits in your own `WM_SIZE` and call `CSplitter_SetRange`.
+pane and the bar. Recompute the limits in your own `WM_SIZE` and call `PsSplitter_SetRange`.
 
 ### Programmatic changes are silent
 
-`CSplitter_SetPos` and `CSplitter_SetRange` clamp, move the bar and repaint, and fire
+`PsSplitter_SetPos` and `PsSplitter_SetRange` clamp, move the bar and repaint, and fire
 **nothing**. They are the host telling the control where it put the splitter, not the user
 moving it — Win32's own setter/notification split. It means you can call either from inside
 the position callback without re-entering yourself, and it means a programmatic move must be
@@ -243,7 +243,7 @@ followed by your own pane layout and repaint, because no callback will come back
 
 If you move the bar yourself — a parent resize, a pane collapse, a plain `SetWindowPos` in a
 layout pass — the control notices through `WM_WINDOWPOSCHANGED` and records the new leading
-edge as its position. So `CSplitter_GetPos` always agrees with where the bar actually is, and
+edge as its position. So `PsSplitter_GetPos` always agrees with where the bar actually is, and
 a host that repositions the splitter during a layout pass cannot desync it.
 
 That re-sync is an *observation*, not a change: nothing is clamped and nothing is notified. If
@@ -288,7 +288,7 @@ would release a capture that was never taken.
 
 Collapse/restore is therefore **yours to implement**, and claiming `WM_LBUTTONDBLCLK` from the
 message callback is the supported way: return TRUE, no drag starts, and the trailing
-`WM_LBUTTONUP` is harmless. Inside that handler, `CSplitter_SetPos` moves the bar silently, so
+`WM_LBUTTONUP` is harmless. Inside that handler, `PsSplitter_SetPos` moves the bar silently, so
 repaint your panes yourself.
 
 Note the sequence is `down, up, dblclk, up` — the first click of a double-click is a real
@@ -317,7 +317,7 @@ Firm properties of the control, not settings:
 
 - **It does not create, size, or know about the panes.** No pane handle is stored and no pane
   is ever moved. Your callback does that work.
-- **It does not compute its own limits.** Until `CSplitter_SetRange` is called the range is
+- **It does not compute its own limits.** Until `PsSplitter_SetRange` is called the range is
   `0 .. &h7FFFFFFF`, i.e. effectively unbounded. Recompute and re-set the limits from your own
   `WM_SIZE`.
 - **The orientation is fixed at creation.** There is no setter. Destroy and recreate to switch.
@@ -328,14 +328,14 @@ Firm properties of the control, not settings:
 - **An inverted range (`nMax < nMin`) pins the bar at `nMin`** rather than rejecting the call.
   A host recomputing limits on `WM_SIZE` legitimately produces one when the window is too small
   to hold both panes, and pinning is the sane result.
-- **Programmatic setters are silent.** `CSplitter_SetPos` and `CSplitter_SetRange` never fire
+- **Programmatic setters are silent.** `PsSplitter_SetPos` and `PsSplitter_SetRange` never fire
   the position callback.
 - **The control moves only along its drag axis.** Cross-axis position and size are read back
   from the window and preserved, never invented. If the bar also has to move sideways — a
   horizontal bar living inside the right pane of a vertical split, for instance — that is your
   `SetWindowPos`.
 - **No keyboard support at all.** The control is not a tabstop, never takes focus, and handles
-  no keys. Keyboard resizing is the host's, through `CSplitter_SetPos`.
+  no keys. Keyboard resizing is the host's, through `PsSplitter_SetPos`.
 - **No visible chrome beyond a flat fill.** The built-in painter fills the whole bar with one
   colour. Grip dots, a centred hairline or an etched edge are a paint callback's job.
 - **No collapse, no restore, no snap, no double-click behaviour of its own.** The control holds
@@ -362,7 +362,7 @@ Firm properties of the control, not settings:
 
 | Function | Description |
 |---|---|
-| `CSplitter_Create( hWndParent, CtrlID [, nOrientation] ) as HWND` | Creates the control as a child of `hWndParent` and returns its window handle. `CtrlID` becomes the window's `GWLP_ID`, so `GetDlgItem` finds it. `nOrientation` is `CSPLITTER_VERTICAL` (the default) or `CSPLITTER_HORIZONTAL`, and is **fixed for the control's lifetime**; any value other than `CSPLITTER_HORIZONTAL` is taken as `CSPLITTER_VERTICAL`. `hWndParent` is captured as the coordinate space every position is measured in. Created with `WS_CHILD or WS_CLIPSIBLINGS or WS_CLIPCHILDREN` — **zero-sized and not visible** — so place, size and show it with `SetWindowPos`. The size you give it along the drag axis is the grab area. |
+| `PsSplitter_Create( hWndParent, CtrlID [, nOrientation] ) as HWND` | Creates the control as a child of `hWndParent` and returns its window handle. `CtrlID` becomes the window's `GWLP_ID`, so `GetDlgItem` finds it. `nOrientation` is `PSSPLITTER_VERTICAL` (the default) or `PSSPLITTER_HORIZONTAL`, and is **fixed for the control's lifetime**; any value other than `PSSPLITTER_HORIZONTAL` is taken as `PSSPLITTER_VERTICAL`. `hWndParent` is captured as the coordinate space every position is measured in. Created with `WS_CHILD or WS_CLIPSIBLINGS or WS_CLIPCHILDREN` — **zero-sized and not visible** — so place, size and show it with `SetWindowPos`. The size you give it along the drag axis is the grab area. |
 
 ### Position and range
 
@@ -371,11 +371,11 @@ bar, y for a horizontal one.
 
 | Function | Description |
 |---|---|
-| `CSplitter_GetPos( hSplit ) as integer` | The current position. Always agrees with where the bar actually is: the control re-syncs from its own window rect whenever the host moves it. Returns 0 for an invalid handle. |
-| `CSplitter_SetPos( hSplit, nPosition )` | Clamps into the current range, moves the bar and repaints. **Silent** — fires no notification, so lay out and repaint your panes yourself. No-op when the clamped value already matches the current position. |
-| `CSplitter_SetRange( hSplit, nMin, nMax )` | Sets the limits a drag clamps to. Also clamps the **current** position into the new range, moving and repainting the bar if it has to — **silently**, because you set the range and already know. An inverted range (`nMax < nMin`) pins the bar at `nMin` rather than failing. The control never derives these limits itself; recompute and re-set them from your own `WM_SIZE`. |
-| `CSplitter_GetMin( hSplit ) as integer` | The lower limit. Defaults to 0. Returns 0 for an invalid handle. |
-| `CSplitter_GetMax( hSplit ) as integer` | The upper limit. Defaults to `&h7FFFFFFF` — effectively unbounded until `CSplitter_SetRange` is called. Returns 0 for an invalid handle, which is **not** the default value, so treat a 0 here as a bad handle rather than as a range. |
+| `PsSplitter_GetPos( hSplit ) as integer` | The current position. Always agrees with where the bar actually is: the control re-syncs from its own window rect whenever the host moves it. Returns 0 for an invalid handle. |
+| `PsSplitter_SetPos( hSplit, nPosition )` | Clamps into the current range, moves the bar and repaints. **Silent** — fires no notification, so lay out and repaint your panes yourself. No-op when the clamped value already matches the current position. |
+| `PsSplitter_SetRange( hSplit, nMin, nMax )` | Sets the limits a drag clamps to. Also clamps the **current** position into the new range, moving and repainting the bar if it has to — **silently**, because you set the range and already know. An inverted range (`nMax < nMin`) pins the bar at `nMin` rather than failing. The control never derives these limits itself; recompute and re-set them from your own `WM_SIZE`. |
+| `PsSplitter_GetMin( hSplit ) as integer` | The lower limit. Defaults to 0. Returns 0 for an invalid handle. |
+| `PsSplitter_GetMax( hSplit ) as integer` | The upper limit. Defaults to `&h7FFFFFFF` — effectively unbounded until `PsSplitter_SetRange` is called. Returns 0 for an invalid handle, which is **not** the default value, so treat a 0 here as a bad handle rather than as a range. |
 
 ### Geometry and layout
 
@@ -386,24 +386,24 @@ move you make as its new position.
 
 | Function | Description |
 |---|---|
-| `CSplitter_GetOrientation( hSplit ) as integer` | `CSPLITTER_VERTICAL` or `CSPLITTER_HORIZONTAL` — whichever was fixed at creation. Returns `CSPLITTER_VERTICAL` for an invalid handle. |
-| `CSplitter_IsHot( hSplit ) as boolean` | TRUE while the mouse is over the bar. **Pinned TRUE for the whole of a drag**, even while the cursor is far outside the bar, and re-derived from the cursor's real position when the drag ends. |
-| `CSplitter_IsDragging( hSplit ) as boolean` | TRUE between the button-down and the button-up (or a lost capture). Already FALSE by the time your `CSPLITTER_PHASE_END` callback runs. |
+| `PsSplitter_GetOrientation( hSplit ) as integer` | `PSSPLITTER_VERTICAL` or `PSSPLITTER_HORIZONTAL` — whichever was fixed at creation. Returns `PSSPLITTER_VERTICAL` for an invalid handle. |
+| `PsSplitter_IsHot( hSplit ) as boolean` | TRUE while the mouse is over the bar. **Pinned TRUE for the whole of a drag**, even while the cursor is far outside the bar, and re-derived from the cursor's real position when the drag ends. |
+| `PsSplitter_IsDragging( hSplit ) as boolean` | TRUE between the button-down and the button-up (or a lost capture). Already FALSE by the time your `PSSPLITTER_PHASE_END` callback runs. |
 
 ### Appearance
 
 | Function | Description |
 |---|---|
-| `CSplitter_GetBackColor( hSplit ) as COLORREF` | The idle fill colour. Returns 0 for an invalid handle. There is no matching getter for the hot colour. |
-| `CSplitter_SetColors( hSplit, backclr, hotclr )` | Sets both colours at once and repaints. `backclr` is the idle fill, `hotclr` the fill used while the bar is hot or being dragged. Used by the built-in painter only — a paint callback ignores them both. |
+| `PsSplitter_GetBackColor( hSplit ) as COLORREF` | The idle fill colour. Returns 0 for an invalid handle. There is no matching getter for the hot colour. |
+| `PsSplitter_SetColors( hSplit, backclr, hotclr )` | Sets both colours at once and repaints. `backclr` is the idle fill, `hotclr` the fill used while the bar is hot or being dragged. Used by the built-in painter only — a paint callback ignores them both. |
 
 ### Callback registration
 
 | Function | Description |
 |---|---|
-| `CSplitter_SetPaintCallback( hSplit, usersub )` | Installs a renderer that draws the whole bar **instead of** the built-in painter. Repaints. |
-| `CSplitter_SetMessageCallback( hSplit, userfunc )` | Installs an observer for the control's mouse and cursor messages. |
-| `CSplitter_SetPosChangedCallback( hSplit, usersub )` | Installs the handler told when the **user** moves the splitter. |
+| `PsSplitter_SetPaintCallback( hSplit, usersub )` | Installs a renderer that draws the whole bar **instead of** the built-in painter. Repaints. |
+| `PsSplitter_SetMessageCallback( hSplit, userfunc )` | Installs an observer for the control's mouse and cursor messages. |
+| `PsSplitter_SetPosChangedCallback( hSplit, usersub )` | Installs the handler told when the **user** moves the splitter. |
 
 All three are optional and independent. Passing a null pointer to any of them clears that
 callback; clearing the paint callback restores the built-in painter.
@@ -413,14 +413,14 @@ callback; clearing the paint callback restores the built-in painter.
 ## Colors
 
 **There is no colours struct.** The control paints one thing — a flat bar — so its whole
-colour surface is two `COLORREF` values, set together by `CSplitter_SetColors`:
+colour surface is two `COLORREF` values, set together by `PsSplitter_SetColors`:
 
 | Colour | Default | Paints |
 |---|---|---|
 | `BackColor` | `BGR(53,59,69)` | The whole bar, idle |
 | `HotColor` | `BGR(90,98,112)` | The whole bar, while the mouse is over it **or** a drag is in progress |
 
-Both ship with a usable dark-theme default, so a control you never call `CSplitter_SetColors`
+Both ship with a usable dark-theme default, so a control you never call `PsSplitter_SetColors`
 on still looks right. Only `BackColor` has a getter.
 
 ### Which colour wins
@@ -441,7 +441,7 @@ There is no disabled colour, because there is no disabled state.
 ### What the painter draws
 
 The built-in painter fills the entire client rectangle with the chosen colour, through
-`CBufferPaint`. That is all of it. A grip, a hairline, an etched border or a gradient is a
+`PsBufferPaint`. That is all of it. A grip, a hairline, an etched border or a gradient is a
 paint callback's job.
 
 ---
@@ -456,26 +456,26 @@ type SPL_PosChangedCallbackSub as sub( byval hSplitter as HWND, byval newPos as 
 ```
 
 The **user** moved the splitter. `newPos` is the bar's new leading edge in the parent's client
-coordinates; `nPhase` is one of `CSPLITTER_PHASE_BEGIN`, `CSPLITTER_PHASE_MOVE` or
-`CSPLITTER_PHASE_END`. See *The three drag phases* above for what each one means and what a
+coordinates; `nPhase` is one of `PSSPLITTER_PHASE_BEGIN`, `PSSPLITTER_PHASE_MOVE` or
+`PSSPLITTER_PHASE_END`. See *The three drag phases* above for what each one means and what a
 host does with it.
 
 The control has already clamped the position and moved itself by the time you are called. Lay
 out the two panes and nothing else.
 
-It does **not** fire for `CSplitter_SetPos` or `CSplitter_SetRange`. Programmatic setters are
+It does **not** fire for `PsSplitter_SetPos` or `PsSplitter_SetRange`. Programmatic setters are
 silent, which is what makes it safe to call either one from inside this very callback.
 
 A `MOVE` is never fired for a position that works out the same as the previous one, so a drag
 held against a limit goes quiet rather than repeating.
 
 The same callback can serve any number of splitters — `hSplitter` says which one, and
-`CSplitter_GetOrientation` says which axis it moved on.
+`PsSplitter_GetOrientation` says which axis it moved on.
 
 ### Paint
 
 ```freebasic
-type SPL_PaintCallbackSub as sub( byval p as CSPLITTER_PAINTINFO ptr )
+type SPL_PaintCallbackSub as sub( byval p as PSSPLITTER_PAINTINFO ptr )
 ```
 
 Draws the whole bar **instead of** the built-in painter — setting a callback replaces that
@@ -485,14 +485,14 @@ double buffer for this repaint, using `p->rcClient` — do not touch the screen 
 Nothing is drawn for you before the callback runs: the callback is responsible for every pixel
 of the bar, background included.
 
-`CSPLITTER_PAINTINFO` carries:
+`PSSPLITTER_PAINTINFO` carries:
 
 | Field | Meaning |
 |---|---|
 | `hSplitter` | The control, so the callback can query it |
-| `b` | The control's `CBufferPaint` for this repaint (borrowed, not owned) |
+| `b` | The control's `PsBufferPaint` for this repaint (borrowed, not owned) |
 | `rcClient` | The whole bar, in client coordinates |
-| `nOrientation` | `CSPLITTER_VERTICAL` or `CSPLITTER_HORIZONTAL` — one callback can serve both kinds of bar |
+| `nOrientation` | `PSSPLITTER_VERTICAL` or `PSSPLITTER_HORIZONTAL` — one callback can serve both kinds of bar |
 | `isHot` | The mouse is over the bar. **Stays TRUE for the whole of a drag** |
 | `isDragging` | A drag is in progress |
 
@@ -505,13 +505,13 @@ of the bar, background included.
 ### Message
 
 ```freebasic
-type SPL_MessageCallbackFunc as function( byval m as CSPLITTER_MESSAGEINFO ptr ) as boolean
+type SPL_MessageCallbackFunc as function( byval m as PSSPLITTER_MESSAGEINFO ptr ) as boolean
 ```
 
 Observes the control's mouse and cursor messages as they arrive. Return TRUE to suppress the
 control's own handling of that message, FALSE to let it proceed.
 
-`CSPLITTER_MESSAGEINFO` carries:
+`PSSPLITTER_MESSAGEINFO` carries:
 
 | Field | Meaning |
 |---|---|
@@ -536,19 +536,19 @@ The callback is invoked for exactly these messages, and no others:
 
 ```freebasic
 ' Named for the BAR's own axis.
-enum CSPLITTER_ORIENTATION
-    CSPLITTER_VERTICAL   = 0     ' vertical bar,   left/right panes -> IDC_SIZEWE, nPos = x
-    CSPLITTER_HORIZONTAL = 1     ' horizontal bar, top/bottom panes -> IDC_SIZENS, nPos = y
+enum PSSPLITTER_ORIENTATION
+    PSSPLITTER_VERTICAL   = 0     ' vertical bar,   left/right panes -> IDC_SIZEWE, nPos = x
+    PSSPLITTER_HORIZONTAL = 1     ' horizontal bar, top/bottom panes -> IDC_SIZENS, nPos = y
 end enum
 
-enum CSPLITTER_PHASE
-    CSPLITTER_PHASE_BEGIN = 0    ' the user just grabbed the bar; newPos = current position
-    CSPLITTER_PHASE_MOVE  = 1    ' the position actually changed
-    CSPLITTER_PHASE_END   = 2    ' the drag ended (button up, or capture lost); final position
+enum PSSPLITTER_PHASE
+    PSSPLITTER_PHASE_BEGIN = 0    ' the user just grabbed the bar; newPos = current position
+    PSSPLITTER_PHASE_MOVE  = 1    ' the position actually changed
+    PSSPLITTER_PHASE_END   = 2    ' the drag ended (button up, or capture lost); final position
 end enum
 ```
 
 | Constant | Value | Meaning |
 |---|---:|---|
 | `IDT_CSPLITTER_HOTTRACK` | `&hCB20` | Timer id for the hover poll. Timer ids are per-window, so every instance can share this one — but do not reuse it for a timer of your own on a splitter's `HWND`. |
-| `CSPLITTER_HOTTRACK_MS` | `100` | Hover poll interval, in milliseconds. The safety net that clears the highlight when `WM_MOUSELEAVE` is not delivered. |
+| `PSSPLITTER_HOTTRACK_MS` | `100` | Hover poll interval, in milliseconds. The safety net that clears the highlight when `WM_MOUSELEAVE` is not delivered. |

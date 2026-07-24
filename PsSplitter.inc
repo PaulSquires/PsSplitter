@@ -1,14 +1,14 @@
 ''
-''  CSplitter.inc  -- owner-drawn splitter bar
+''  PsSplitter.inc  -- owner-drawn splitter bar
 ''
 
-#include once "CSplitter.bi"
+#include once "PsSplitter.bi"
 
 
-function GetSplitterPointer( byval hSplit as HWND ) as CSPLITTER ptr
+function GetSplitterPointer( byval hSplit as HWND ) as PSSPLITTER ptr
     dim pWindow as CWindow ptr = AfxCWindowPtr(hSplit)
     if pWindow = 0 then return 0
-    return cast( CSPLITTER ptr, pWindow->UserData(0) )
+    return cast( PSSPLITTER ptr, pWindow->UserData(0) )
 end function
 
 
@@ -16,8 +16,8 @@ end function
 ' Hand a message to the host's message callback. Returns TRUE if the host claims it.
 ' Callers decide whether to honor that answer -- WM_LBUTTONUP deliberately does not.
 ' ========================================================================================
-function CSplitter_CallMessage( _
-            byval pSpl   as CSPLITTER ptr, _
+function PsSplitter_CallMessage( _
+            byval pSpl   as PSSPLITTER ptr, _
             byval hwnd   as HWND, _
             byval uMsg   as UINT, _
             byval wParam as WPARAM, _
@@ -27,7 +27,7 @@ function CSplitter_CallMessage( _
     if pSpl = 0 then return false
     if pSpl->MessageCallback = 0 then return false
 
-    dim as CSPLITTER_MESSAGEINFO m
+    dim as PSSPLITTER_MESSAGEINFO m
     m.hSplitter = hwnd
     m.uMsg      = uMsg
     m.wParam    = wParam
@@ -40,7 +40,7 @@ end function
 ' Clear the hover state and stop the hover poll timer. Repaints only if the state actually
 ' changes, so this is cheap to call repeatedly.
 ' ========================================================================================
-sub CSplitter_ClearHot( byval pSpl as CSPLITTER ptr )
+sub PsSplitter_ClearHot( byval pSpl as PSSPLITTER ptr )
     if pSpl = 0 then return
     if pSpl->hotTimerOn then
         KillTimer( pSpl->hWin, IDT_CSPLITTER_HOTTRACK )
@@ -57,10 +57,10 @@ end sub
 ' Arm the hover poll timer if it is not already running. WM_MOUSELEAVE is not reliably
 ' delivered on fast exits, so this periodic cursor check is the safety net.
 ' ========================================================================================
-sub CSplitter_ArmHotTimer( byval pSpl as CSPLITTER ptr )
+sub PsSplitter_ArmHotTimer( byval pSpl as PSSPLITTER ptr )
     if pSpl = 0 then return
     if pSpl->hotTimerOn then return
-    SetTimer( pSpl->hWin, IDT_CSPLITTER_HOTTRACK, CSPLITTER_HOTTRACK_MS, NULL )
+    SetTimer( pSpl->hWin, IDT_CSPLITTER_HOTTRACK, PSSPLITTER_HOTTRACK_MS, NULL )
     pSpl->hotTimerOn = true
 end sub
 
@@ -74,9 +74,9 @@ end sub
 ' generates cannot fire a second END notification.
 '
 ' The END notification goes out LAST, after the state is consistent: a host that queries
-' CSplitter_IsDragging() from inside the callback must see FALSE.
+' PsSplitter_IsDragging() from inside the callback must see FALSE.
 ' ========================================================================================
-sub CSplitter_EndDrag( byval pSpl as CSPLITTER ptr )
+sub PsSplitter_EndDrag( byval pSpl as PSSPLITTER ptr )
     if pSpl = 0 then return
     if pSpl->isDragging = false then return
     pSpl->isDragging = false
@@ -88,7 +88,7 @@ sub CSplitter_EndDrag( byval pSpl as CSPLITTER ptr )
     GetClientRect( pSpl->hWin, @rcClient )
     pSpl->isHot = isMouseOverRECT( pSpl->hWin, rcClient )
     if pSpl->isHot then
-        CSplitter_ArmHotTimer( pSpl )
+        PsSplitter_ArmHotTimer( pSpl )
     else
         if pSpl->hotTimerOn then
             KillTimer( pSpl->hWin, IDT_CSPLITTER_HOTTRACK )
@@ -97,21 +97,21 @@ sub CSplitter_EndDrag( byval pSpl as CSPLITTER ptr )
     end if
 
     InvalidateRect( pSpl->hWin, NULL, FALSE )
-    pSpl->Notify( CSPLITTER_PHASE_END )
+    pSpl->Notify( PSSPLITTER_PHASE_END )
 end sub
 
 
 ' ========================================================================================
 ' Process WM_PAINT.
 ' ========================================================================================
-function CSplitter_OnPaint( byval hwnd as HWND ) as LRESULT
-    dim as CSPLITTER ptr pSpl = GetSplitterPointer(hwnd)
+function PsSplitter_OnPaint( byval hwnd as HWND ) as LRESULT
+    dim as PSSPLITTER ptr pSpl = GetSplitterPointer(hwnd)
     if pSpl = 0 then return 0
 
-    dim as CBufferPaint b
+    dim as PsBufferPaint b
     b.BeginDoubleBuffer(hwnd)
 
-    dim as CSPLITTER_PAINTINFO p
+    dim as PSSPLITTER_PAINTINFO p
     p.hSplitter    = hwnd
     p.b            = @b
     GetClientRect( hwnd, @p.rcClient )
@@ -135,19 +135,19 @@ end function
 
 
 ' ========================================================================================
-' CSplitter Window procedure
+' PsSplitter Window procedure
 ' ========================================================================================
-function CSplitter_WndProc( _
+function PsSplitter_WndProc( _
             byval hwnd   as HWND, _
             byval uMsg   as UINT, _
             byval wParam as WPARAM, _
             byval lParam as LPARAM _
             ) as LRESULT
 
-    dim as CSPLITTER ptr pSpl = GetSplitterPointer(hwnd)
+    dim as PSSPLITTER ptr pSpl = GetSplitterPointer(hwnd)
 
     select case uMsg
-        HANDLE_MSG (hwnd, WM_PAINT, CSplitter_OnPaint)
+        HANDLE_MSG (hwnd, WM_PAINT, PsSplitter_OnPaint)
 
     case WM_ERASEBKGND
         return true      ' the double buffer paints every pixel
@@ -174,7 +174,7 @@ function CSplitter_WndProc( _
         ' or off the window entirely), so mid-drag we own the cursor unconditionally.
         dim as boolean bClient = (loword(lParam) = HTCLIENT)
         if (pSpl->isDragging = false) andalso (bClient = false) then exit select
-        if CSplitter_CallMessage( pSpl, hwnd, uMsg, wParam, lParam ) then return true
+        if PsSplitter_CallMessage( pSpl, hwnd, uMsg, wParam, lParam ) then return true
         if pSpl->hBarCursor then
             SetCursor( pSpl->hBarCursor )
             return true
@@ -190,7 +190,7 @@ function CSplitter_WndProc( _
         ' Capture goes first, before any host callback runs, so the down->up pairing is
         ' guaranteed no matter what the host does with the message.
         SetCapture( hwnd )
-        if CSplitter_CallMessage( pSpl, hwnd, uMsg, wParam, lParam ) then return 0
+        if PsSplitter_CallMessage( pSpl, hwnd, uMsg, wParam, lParam ) then return 0
 
         pSpl->isDragging = true
         pSpl->isHot      = true      ' pinned for the whole gesture
@@ -200,12 +200,12 @@ function CSplitter_WndProc( _
         ' clamps sticky.
         pSpl->dragOffset = pSpl->CursorAxisInParent() - pSpl->nPos
         InvalidateRect( hwnd, NULL, FALSE )
-        pSpl->Notify( CSPLITTER_PHASE_BEGIN )
+        pSpl->Notify( PSSPLITTER_PHASE_BEGIN )
         return 0
 
     case WM_MOUSEMOVE
         if pSpl = 0 then return 0
-        if CSplitter_CallMessage( pSpl, hwnd, uMsg, wParam, lParam ) then return 0
+        if PsSplitter_CallMessage( pSpl, hwnd, uMsg, wParam, lParam ) then return 0
 
         if pSpl->isDragging then
             dim as integer newPos = _
@@ -213,7 +213,7 @@ function CSplitter_WndProc( _
             if newPos <> pSpl->nPos then
                 pSpl->nPos = newPos
                 pSpl->MoveBar()          ' no repaint needed: the content did not change
-                pSpl->Notify( CSPLITTER_PHASE_MOVE )
+                pSpl->Notify( PSSPLITTER_PHASE_MOVE )
             end if
         else
             ' Hover. The whole client IS the bar, so any move that reaches us (outside a
@@ -223,7 +223,7 @@ function CSplitter_WndProc( _
             tme.dwFlags   = TME_LEAVE
             tme.hwndTrack = hwnd
             TrackMouseEvent(@tme)
-            CSplitter_ArmHotTimer( pSpl )
+            PsSplitter_ArmHotTimer( pSpl )
             if pSpl->isHot = false then
                 pSpl->isHot = true
                 InvalidateRect( hwnd, NULL, FALSE )
@@ -236,24 +236,24 @@ function CSplitter_WndProc( _
         ' The callback's answer is deliberately IGNORED here: this up-message is the
         ' capture's exit, and a host allowed to suppress it would strand the capture and
         ' swallow the next click anywhere in the app.
-        CSplitter_CallMessage( pSpl, hwnd, uMsg, wParam, lParam )
+        PsSplitter_CallMessage( pSpl, hwnd, uMsg, wParam, lParam )
         ' End the drag BEFORE releasing, so the WM_CAPTURECHANGED that ReleaseCapture
         ' generates finds nothing to do and cannot fire a second END.
-        CSplitter_EndDrag( pSpl )
+        PsSplitter_EndDrag( pSpl )
         if GetCapture() = hwnd then ReleaseCapture()
         return 0
 
     case WM_CAPTURECHANGED
         ' Capture lost to someone else mid-drag. Keep the position the user dragged to and
         ' close the gesture cleanly.
-        CSplitter_EndDrag( pSpl )
+        PsSplitter_EndDrag( pSpl )
         return 0
 
     case WM_MOUSELEAVE
         ' Stand down while dragging: under capture the cursor legitimately leaves the
         ' client, and clearing hover there would strip the bar's active visuals mid-drag.
         if pSpl = 0 then return 0
-        if pSpl->isDragging = false then CSplitter_ClearHot( pSpl )
+        if pSpl->isDragging = false then PsSplitter_ClearHot( pSpl )
         return 0
 
     case WM_SHOWWINDOW
@@ -261,8 +261,8 @@ function CSplitter_WndProc( _
         ' or it would reappear stale the next time we are shown.
         if pSpl = 0 then exit select
         if wParam = 0 then
-            CSplitter_EndDrag( pSpl )
-            CSplitter_ClearHot( pSpl )
+            PsSplitter_EndDrag( pSpl )
+            PsSplitter_ClearHot( pSpl )
         end if
         exit select
 
@@ -271,7 +271,7 @@ function CSplitter_WndProc( _
         if wParam = IDT_CSPLITTER_HOTTRACK then
             if pSpl->isDragging = false then
                 dim as RECT rcClient : GetClientRect( hwnd, @rcClient )
-                if isMouseOverRECT( hwnd, rcClient ) = false then CSplitter_ClearHot( pSpl )
+                if isMouseOverRECT( hwnd, rcClient ) = false then PsSplitter_ClearHot( pSpl )
             end if
             return 0
         end if
@@ -295,20 +295,20 @@ end function
 
 
 ' ========================================================================================
-' CSplitter_Create. The control starts hidden and zero-sized; the host positions, sizes
+' PsSplitter_Create. The control starts hidden and zero-sized; the host positions, sizes
 ' and shows it with SetWindowPos. The size it gives us along the drag axis IS the grab
 ' area -- there is no separate hit margin.
 ' ========================================================================================
-function CSplitter_Create( _
+function PsSplitter_Create( _
             byval hWndParent   as HWND, _
             byval CtrlID       as integer, _
-            byval nOrientation as integer = CSPLITTER_VERTICAL _
+            byval nOrientation as integer = PSSPLITTER_VERTICAL _
             ) as HWND
 
     dim pWindow as CWindow ptr = New CWindow
 
     dim as HWND hSplit = _
-        pWindow->Create( hWndParent, "", @CSplitter_WndProc, _
+        pWindow->Create( hWndParent, "", @PsSplitter_WndProc, _
                          0, 0, 0, 0, WS_CHILD or WS_CLIPSIBLINGS or WS_CLIPCHILDREN )
 
     ' Enable double-click messages (WM_LBUTTONDBLCLK) on the control's window class,
@@ -317,15 +317,15 @@ function CSplitter_Create( _
     ' m_hwnd -- i.e. it only works after Create.)
     pWindow->ClassStyle = pWindow->ClassStyle or CS_DBLCLKS
 
-    dim as CSPLITTER ptr pSpl = new CSPLITTER
+    dim as PSSPLITTER ptr pSpl = new PSSPLITTER
     pSpl->hWin    = hSplit
     pSpl->hParent = hWndParent
 
-    if nOrientation <> CSPLITTER_HORIZONTAL then nOrientation = CSPLITTER_VERTICAL
+    if nOrientation <> PSSPLITTER_HORIZONTAL then nOrientation = PSSPLITTER_VERTICAL
     pSpl->nOrientation = nOrientation
 
     ' Shared system cursors -- never DestroyCursor these.
-    if nOrientation = CSPLITTER_VERTICAL then
+    if nOrientation = PSSPLITTER_VERTICAL then
         pSpl->hBarCursor = LoadCursor( null, IDC_SIZEWE )
     else
         pSpl->hBarCursor = LoadCursor( null, IDC_SIZENS )
@@ -338,15 +338,15 @@ function CSplitter_Create( _
 end function
 
 
-function CSplitter_GetOrientation( byval hSplit as HWND ) as integer
-    dim as CSPLITTER ptr pSpl = GetSplitterPointer(hSplit)
-    if pSpl = 0 then return CSPLITTER_VERTICAL
+function PsSplitter_GetOrientation( byval hSplit as HWND ) as integer
+    dim as PSSPLITTER ptr pSpl = GetSplitterPointer(hSplit)
+    if pSpl = 0 then return PSSPLITTER_VERTICAL
     return pSpl->nOrientation
 end function
 
 
-function CSplitter_GetPos( byval hSplit as HWND ) as integer
-    dim as CSPLITTER ptr pSpl = GetSplitterPointer(hSplit)
+function PsSplitter_GetPos( byval hSplit as HWND ) as integer
+    dim as PSSPLITTER ptr pSpl = GetSplitterPointer(hSplit)
     if pSpl = 0 then return 0
     return pSpl->nPos
 end function
@@ -354,8 +354,8 @@ end function
 
 ' Set the position without invoking the position callback (this is the host telling us
 ' where it put the splitter, not the user moving it).
-sub CSplitter_SetPos( byval hSplit as HWND, byval nPosition as integer )
-    dim as CSPLITTER ptr pSpl = GetSplitterPointer(hSplit)
+sub PsSplitter_SetPos( byval hSplit as HWND, byval nPosition as integer )
+    dim as PSSPLITTER ptr pSpl = GetSplitterPointer(hSplit)
     if pSpl = 0 then return
     nPosition = pSpl->ClampPos( nPosition )
     if nPosition = pSpl->nPos then return
@@ -367,8 +367,8 @@ end sub
 
 ' Set the drag limits, in the same parent-client space as the position. Clamps the current
 ' position into the new range -- silently, because the host set the range and already knows.
-sub CSplitter_SetRange( byval hSplit as HWND, byval nMin as integer, byval nMax as integer )
-    dim as CSPLITTER ptr pSpl = GetSplitterPointer(hSplit)
+sub PsSplitter_SetRange( byval hSplit as HWND, byval nMin as integer, byval nMax as integer )
+    dim as PSSPLITTER ptr pSpl = GetSplitterPointer(hSplit)
     if pSpl = 0 then return
     pSpl->nMin = nMin
     pSpl->nMax = nMax
@@ -381,43 +381,43 @@ sub CSplitter_SetRange( byval hSplit as HWND, byval nMin as integer, byval nMax 
 end sub
 
 
-function CSplitter_GetMin( byval hSplit as HWND ) as integer
-    dim as CSPLITTER ptr pSpl = GetSplitterPointer(hSplit)
+function PsSplitter_GetMin( byval hSplit as HWND ) as integer
+    dim as PSSPLITTER ptr pSpl = GetSplitterPointer(hSplit)
     if pSpl = 0 then return 0
     return pSpl->nMin
 end function
 
 
-function CSplitter_GetMax( byval hSplit as HWND ) as integer
-    dim as CSPLITTER ptr pSpl = GetSplitterPointer(hSplit)
+function PsSplitter_GetMax( byval hSplit as HWND ) as integer
+    dim as PSSPLITTER ptr pSpl = GetSplitterPointer(hSplit)
     if pSpl = 0 then return 0
     return pSpl->nMax
 end function
 
 
-function CSplitter_IsHot( byval hSplit as HWND ) as boolean
-    dim as CSPLITTER ptr pSpl = GetSplitterPointer(hSplit)
+function PsSplitter_IsHot( byval hSplit as HWND ) as boolean
+    dim as PSSPLITTER ptr pSpl = GetSplitterPointer(hSplit)
     if pSpl = 0 then return false
     return pSpl->isHot
 end function
 
 
-function CSplitter_IsDragging( byval hSplit as HWND ) as boolean
-    dim as CSPLITTER ptr pSpl = GetSplitterPointer(hSplit)
+function PsSplitter_IsDragging( byval hSplit as HWND ) as boolean
+    dim as PSSPLITTER ptr pSpl = GetSplitterPointer(hSplit)
     if pSpl = 0 then return false
     return pSpl->isDragging
 end function
 
 
-function CSplitter_GetBackColor( byval hSplit as HWND ) as COLORREF
-    dim as CSPLITTER ptr pSpl = GetSplitterPointer(hSplit)
+function PsSplitter_GetBackColor( byval hSplit as HWND ) as COLORREF
+    dim as PSSPLITTER ptr pSpl = GetSplitterPointer(hSplit)
     if pSpl = 0 then return 0
     return pSpl->BackColor
 end function
 
 
-sub CSplitter_SetColors( byval hSplit as HWND, byval backclr as COLORREF, byval hotclr as COLORREF )
-    dim as CSPLITTER ptr pSpl = GetSplitterPointer(hSplit)
+sub PsSplitter_SetColors( byval hSplit as HWND, byval backclr as COLORREF, byval hotclr as COLORREF )
+    dim as PSSPLITTER ptr pSpl = GetSplitterPointer(hSplit)
     if pSpl = 0 then return
     pSpl->BackColor = backclr
     pSpl->HotColor  = hotclr
@@ -425,23 +425,23 @@ sub CSplitter_SetColors( byval hSplit as HWND, byval backclr as COLORREF, byval 
 end sub
 
 
-sub CSplitter_SetPaintCallback( byval hSplit as HWND, byval usersub as SPL_PaintCallbackSub )
-    dim as CSPLITTER ptr pSpl = GetSplitterPointer(hSplit)
+sub PsSplitter_SetPaintCallback( byval hSplit as HWND, byval usersub as SPL_PaintCallbackSub )
+    dim as PSSPLITTER ptr pSpl = GetSplitterPointer(hSplit)
     if pSpl = 0 then return
     pSpl->PaintCallback = usersub
     InvalidateRect( hSplit, NULL, FALSE )
 end sub
 
 
-sub CSplitter_SetMessageCallback( byval hSplit as HWND, byval userfunc as SPL_MessageCallbackFunc )
-    dim as CSPLITTER ptr pSpl = GetSplitterPointer(hSplit)
+sub PsSplitter_SetMessageCallback( byval hSplit as HWND, byval userfunc as SPL_MessageCallbackFunc )
+    dim as PSSPLITTER ptr pSpl = GetSplitterPointer(hSplit)
     if pSpl = 0 then return
     pSpl->MessageCallback = userfunc
 end sub
 
 
-sub CSplitter_SetPosChangedCallback( byval hSplit as HWND, byval usersub as SPL_PosChangedCallbackSub )
-    dim as CSPLITTER ptr pSpl = GetSplitterPointer(hSplit)
+sub PsSplitter_SetPosChangedCallback( byval hSplit as HWND, byval usersub as SPL_PosChangedCallbackSub )
+    dim as PSSPLITTER ptr pSpl = GetSplitterPointer(hSplit)
     if pSpl = 0 then return
     pSpl->PosChangedCallback = usersub
 end sub
