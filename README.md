@@ -552,3 +552,17 @@ end enum
 |---|---:|---|
 | `IDT_CSPLITTER_HOTTRACK` | `&hCB20` | Timer id for the hover poll. Timer ids are per-window, so every instance can share this one — but do not reuse it for a timer of your own on a splitter's `HWND`. |
 | `PSSPLITTER_HOTTRACK_MS` | `100` | Hover poll interval, in milliseconds. The safety net that clears the highlight when `WM_MOUSELEAVE` is not delivered. |
+
+## Licence
+
+[Mozilla Public License 2.0](LICENSE).
+
+MPL-2.0 is file-level copyleft, chosen deliberately for a drop-in control:
+
+- **You may use this in closed-source software**, commercial or otherwise.
+  §3.2 permits static linking with no additional conditions.
+- **If you modify these files, publish those files' changes.** The obligation is
+  per-file — your own sources are unaffected however tightly they are combined
+  with these.
+- The Exhibit B "Incompatible With Secondary Licenses" notice is **not applied**,
+  which keeps this GPL-compatible.
